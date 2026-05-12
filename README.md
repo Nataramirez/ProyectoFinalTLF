@@ -1,10 +1,9 @@
 # Proyecto Final — Teoría de Lenguajes Formales
 ### Búsqueda y Validación de Patrones en Textos y Sistemas Interactivos
 
-**Institución:** Universidad  
+**Institución:** Universidad del Quindio  
 **Asignatura:** Teoría de Lenguajes Formales  
-**Autoras:** Natalia Ramírez · Valentina  
-**Versión:** 1.0 — Mayo 2026
+**Autores:** Natalia Ramírez Lievano · Jhaineth Valentina Naranjo Mejía · Sebastian Gallego Salazar
 
 ---
 
@@ -29,7 +28,7 @@ La aplicación desarrollada es un sistema de escritorio construido con Python y 
 | URL | `http://` o `https://` + dominio | `https://www.pagina.com/ruta` |
 | Placa colombiana | `ABC-123` (carro) / `ABC12D` (moto) | `XYZ-999` |
 
-**B. Validación en formulario interactivo:** un formulario de registro valida cada campo en tiempo real mientras el usuario escribe, emitiendo retroalimentación visual inmediata (color verde/rojo, iconos ✔/✘ y mensajes descriptivos). Los campos validados son: nombre de usuario, correo electrónico, teléfono, cédula, fecha de nacimiento, contraseña y confirmación de contraseña.
+**B. Validación en formulario interactivo:** un formulario de registro valida cada campo en tiempo real mientras el usuario escribe, emitiendo retroalimentación visual inmediata. Los campos validados son: nombre de usuario, correo electrónico, teléfono, cédula, fecha de nacimiento, contraseña y confirmación de contraseña.
 
 La solución cumple el requisito central del proyecto: **todas las validaciones se implementan mediante autómatas finitos deterministas codificados manualmente**, sin usar la librería `re` de Python ni ningún motor de expresiones regulares externo.
 
@@ -45,7 +44,7 @@ Se identificaron seis patrones de texto con relevancia en el contexto colombiano
 - El formato esperado y sus variantes permitidas.
 - Un conjunto de ejemplos válidos e inválidos para verificación.
 
-Adicionalmente se identificaron las reglas de negocio del formulario: nombre de usuario alfanumérico, contraseña segura con fortaleza progresiva, y confirmación de contraseña coincidente.
+Adicionalmente se identificaron las reglas de negocio del formulario: contraseña segura con fortaleza progresiva y confirmación de contraseña coincidente.
 
 ### 3.2 Diseño del Sistema
 
@@ -129,13 +128,13 @@ Provee las funciones de acceso `obtener_patron`, `validar_con_patron` y `buscar_
 
 ### 3.5 Interfaz Gráfica
 
-La aplicación presenta una ventana principal con tres pestañas implementadas con `ttk.Notebook`:
+La aplicación presenta una ventana principal con tres pestañas implementadas:
 
 **Pestaña 1 — Búsqueda en Textos:**  
 Panel izquierdo con área de texto editable y carga de archivos `.txt`. Panel derecho con resultados por categoría. Las coincidencias se resaltan en amarillo dentro del texto original. El usuario puede buscar todos los patrones a la vez o seleccionar uno específico mediante botones de radio.
 
 **Pestaña 2 — Formulario de Registro:**  
-Siete campos con validación en tiempo real al escribir (`<KeyRelease>`). Cada campo muestra su estado con color de fondo (verde/rojo), ícono (✔/✘) y mensaje descriptivo. Un panel lateral muestra el resumen de estado de todos los campos simultáneamente. El indicador de fortaleza de contraseña evalúa seis criterios: longitud mínima, longitud extendida, mayúsculas, minúsculas, dígitos y caracteres especiales.
+Siete campos con validación en tiempo real al escribir. Un panel lateral muestra el resumen de estado de todos los campos simultáneamente. El indicador de fortaleza de contraseña evalúa seis criterios: longitud mínima, longitud extendida, mayúsculas, minúsculas, dígitos y caracteres especiales.
 
 **Pestaña 3 — Casos de Prueba:**  
 Ejecuta automáticamente los 52 casos de prueba (válidos e inválidos) de los seis patrones y muestra el resultado de cada uno con codificación de color. Incluye un resumen con el puntaje total y porcentaje de precisión.
@@ -207,7 +206,7 @@ El diseño de tener funciones `validar_X` (reconocen si una cadena completa pert
 Un desafío real fue que los lenguajes de cédula y teléfono son ambiguos para ciertas cadenas: `3001234567` pertenece a ambos lenguajes. Esto evidencia que en sistemas reales el contexto es necesario para la desambiguación; la solución adoptada fue dar prioridad al patrón más específico (teléfono) sobre el más general (cédula).
 
 **Sobre la validación en formularios:**  
-La validación en tiempo real con retroalimentación inmediata mejora la experiencia del usuario al evitar el ciclo de error-corrección-reenvío. La implementación con eventos `<KeyRelease>` de tkinter demostró que la validación por autómata es suficientemente eficiente para operar en cada pulsación de tecla sin degradar la respuesta de la interfaz.
+La validación en tiempo real con retroalimentación inmediata mejora la experiencia del usuario al evitar el ciclo de error-corrección-reenvío.
 
 **Sobre las pruebas:**  
 La definición de casos de prueba formales como parte del desarrollo, y no como actividad posterior, permitió detectar errores en los autómatas durante la implementación. La suite de 52 casos con resultado 100% de precisión valida que los autómatas implementados reconocen correctamente el lenguaje definido para cada patrón.
