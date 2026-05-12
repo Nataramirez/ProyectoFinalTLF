@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+interfaz/busqueda.py
+interfaz/formulario.py
+proyecto_final_tlf.egg-info/PKG-INFO
+proyecto_final_tlf.egg-info/SOURCES.txt
+proyecto_final_tlf.egg-info/dependency_links.txt
+proyecto_final_tlf.egg-info/entry_points.txt
+proyecto_final_tlf.egg-info/requires.txt
+proyecto_final_tlf.egg-info/top_level.txt

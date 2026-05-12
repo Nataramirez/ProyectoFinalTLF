@@ -9,6 +9,7 @@ from tkinter import ttk
 
 from interfaz.busqueda import VentanaBusqueda
 from interfaz.formulario import VentanaFormulario
+from interfaz.pruebas import VentanaPruebas
 
 # =============================================================================
 # PALETA DE COLORES (coherente con el resto del proyecto)
@@ -119,7 +120,7 @@ class Aplicacion(tk.Tk):
         # Título e ícono
         tk.Label(
             barra,
-            text="⬡  Buscador y Validador de Patrones nata y valen",
+            text="⬡  Buscador y Validador de Patrones",
             font=FONT_TITULO,
             bg=COLOR_PANEL,
             fg=COLOR_ACENTO,
@@ -156,6 +157,13 @@ class Aplicacion(tk.Tk):
         self.notebook.add(
             self.tab_formulario,
             text="  📋  Formulario de Registro  "
+        )
+
+        # --- Pestaña 3: Casos de prueba ---
+        self.tab_pruebas = VentanaPruebas(self.notebook)
+        self.notebook.add(
+            self.tab_pruebas,
+            text="  🧪  Casos de Prueba  "
         )
 
         # Evento al cambiar de pestaña
@@ -197,6 +205,7 @@ class Aplicacion(tk.Tk):
         nombres = {
             0: "Búsqueda en Textos",
             1: "Formulario de Registro",
+            2: "Casos de Prueba",
         }
         nombre = nombres.get(indice, "")
         self.label_pestana.config(
@@ -210,7 +219,6 @@ class Aplicacion(tk.Tk):
 # =============================================================================
 # PUNTO DE ENTRADA
 # =============================================================================
-
 if __name__ == "__main__":
     app = Aplicacion()
     app.mainloop()
