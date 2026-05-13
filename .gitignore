@@ -1,0 +1,37 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Caché de Python
+__pycache__/
+.py[cod]
++*.pyo
+
+# Distribución y empaquetado
+dist/
+build/
+.egg-info/
+.egg
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+
+# IDEs
+.idea/
+.vscode/
+.iml
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos temporales
+.claude
+.tmp
+.log
