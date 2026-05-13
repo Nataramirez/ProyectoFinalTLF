@@ -1,0 +1,2 @@
+[console_scripts]
+start = proyecto_final_tlf.main:main

@@ -125,7 +125,7 @@ def buscar_telefonos(texto):
     n = len(texto)
     i = 0
     while i < n:
-        for longitud in [14, 13, 12, 11, 10]:
+        for longitud in [16, 15, 14, 13, 12, 11, 10]:
             if i + longitud <= n:
                 subcadena = texto[i:i + longitud]
                 if validar_telefono(subcadena):
@@ -255,13 +255,18 @@ def validar_url(cadena):
     else:
         return False
 
-    # Leer dominio (al menos 1 carácter válido)
+    # Leer dominio — debe tener al menos un punto (ej: google.com)
     if i >= n or not (es_alfanumerico(cadena[i]) or cadena[i] == '-'):
         return False
+    tiene_punto_dominio = False
     while i < n and (es_alfanumerico(cadena[i]) or cadena[i] in '.-'):
+        if cadena[i] == '.':
+            tiene_punto_dominio = True
         i += 1
+    if not tiene_punto_dominio:
+        return False
 
-    # Debe haber al menos un punto en el dominio (ya consumido arriba)
+    # Ruta opcional
     # Leer ruta opcional
     caracteres_ruta = set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&\'()*+,;=%')
     while i < n and cadena[i] in caracteres_ruta:
@@ -361,11 +366,26 @@ def buscar_todos(texto):
     Recorre el texto buscando todos los patrones definidos.
     Retorna un diccionario con los resultados por categoría.
     """
+    telefonos = buscar_telefonos(texto)
+
+    # Extraer los 10 dígitos locales de cada teléfono para evitar
+    # que un número como 3001234567 aparezca también como cédula.
+    numeros_telefono = set()
+    for t in telefonos:
+        solo_digitos = ''
+        for c in t:
+            if es_digito(c):
+                solo_digitos += c
+        if len(solo_digitos) >= 10:
+            numeros_telefono.add(solo_digitos[-10:])
+
+    cedulas = [c for c in buscar_cedulas(texto) if c not in numeros_telefono]
+
     return {
         'correos'   : buscar_correos(texto),
-        'telefonos' : buscar_telefonos(texto),
+        'telefonos' : telefonos,
         'fechas'    : buscar_fechas(texto),
-        'cedulas'   : buscar_cedulas(texto),
+        'cedulas'   : cedulas,
         'urls'      : buscar_urls(texto),
         'placas'    : buscar_placas(texto),
     }
