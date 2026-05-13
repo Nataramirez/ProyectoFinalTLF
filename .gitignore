@@ -2,6 +2,8 @@
 .venv/
 venv/
 env/
+.claude
+.claude/
 
 # Caché de Python
 __pycache__/
@@ -32,6 +34,5 @@ htmlcov/
 Thumbs.db
 
 # Archivos temporales
-.claude
 .tmp
 .log
