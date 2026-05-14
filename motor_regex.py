@@ -18,6 +18,44 @@ def es_mayuscula(c):
     return 'A' <= c <= 'Z'
 
 
+def _label_dominio_valido(label):
+    """Valida una parte de dominio sin usar expresiones regulares."""
+    if label == "":
+        return False
+    if label[0] == '-' or label[-1] == '-':
+        return False
+    for c in label:
+        if not (es_alfanumerico(c) or c == '-'):
+            return False
+    return True
+
+
+def _dominio_valido(dominio):
+    """Valida dominios con al menos un punto y TLD alfabetico de 2+ letras."""
+    partes = dominio.split('.')
+    if len(partes) < 2:
+        return False
+    for parte in partes[:-1]:
+        if not _label_dominio_valido(parte):
+            return False
+    tld = partes[-1]
+    if len(tld) < 2:
+        return False
+    for c in tld:
+        if not es_letra(c):
+            return False
+    return True
+
+
+def _es_bisiesto(anio):
+    return (anio % 4 == 0 and anio % 100 != 0) or (anio % 400 == 0)
+
+
+def _limite_token(texto, indice):
+    """True si el indice esta fuera o apunta a un separador de token."""
+    return indice < 0 or indice >= len(texto) or not es_alfanumerico(texto[indice])
+
+
 def validar_correo(cadena):
     """
     Valida si una cadena completa es un correo electrónico válido.
@@ -33,32 +71,16 @@ def validar_correo(cadena):
         return False
     while i < n and (es_alfanumerico(cadena[i]) or cadena[i] in '._-'):
         i += 1
+    usuario = cadena[:i]
+    if usuario[0] == '.' or usuario[-1] == '.' or '..' in usuario:
+        return False
 
     # Estado q1 → q2: debe haber exactamente un '@'
     if i >= n or cadena[i] != '@':
         return False
     i += 1
 
-    # Estado q2 → q3: leer el dominio (al menos 1 carácter)
-    if i >= n or not es_alfanumerico(cadena[i]):
-        return False
-    while i < n and es_alfanumerico(cadena[i]):
-        i += 1
-
-    # Estado q3 → q4+: leer uno o más bloques .extension (ej: .com o .com.co)
-    # Debe haber al menos un bloque .letras de 2-6 caracteres
-    tiene_extension = False
-    while i < n and cadena[i] == '.':
-        i += 1  # consumir el punto
-        inicio_ext = i
-        while i < n and es_letra(cadena[i]):
-            i += 1
-        longitud_ext = i - inicio_ext
-        if longitud_ext < 2 or longitud_ext > 6:
-            return False
-        tiene_extension = True
-
-    return i == n and tiene_extension
+    return _dominio_valido(cadena[i:])
 
 
 def buscar_correos(texto):
@@ -128,7 +150,9 @@ def buscar_telefonos(texto):
         for longitud in [16, 15, 14, 13, 12, 11, 10]:
             if i + longitud <= n:
                 subcadena = texto[i:i + longitud]
-                if validar_telefono(subcadena):
+                antes = _limite_token(texto, i - 1)
+                despues = _limite_token(texto, i + longitud)
+                if antes and despues and validar_telefono(subcadena):
                     resultados.append(subcadena.strip())
                     i += longitud - 1
                     break
@@ -173,8 +197,11 @@ def validar_fecha(cadena):
     if not (1900 <= anio <= 2099):
         return False
 
-    # Validar días por mes (simplificado)
-    dias_por_mes = [0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    # Validar dias por mes, incluyendo bisiestos.
+    dias_por_mes = [
+        0, 31, 29 if _es_bisiesto(anio) else 28, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31
+    ]
     if dia > dias_por_mes[mes]:
         return False
 
@@ -190,7 +217,7 @@ def buscar_fechas(texto):
     n = len(texto)
     for i in range(n - 9):
         subcadena = texto[i:i + 10]
-        if validar_fecha(subcadena):
+        if _limite_token(texto, i - 1) and _limite_token(texto, i + 10) and validar_fecha(subcadena):
             resultados.append(subcadena)
     return resultados
 
@@ -225,9 +252,9 @@ def buscar_cedulas(texto):
             while j < n and es_digito(texto[j]):
                 j += 1
             subcadena = texto[i:j]
-            # Verificar que no está rodeada de más dígitos
-            antes = (i == 0 or not es_digito(texto[i - 1]))
-            despues = (j == n or not es_digito(texto[j]))
+            # Verificar que no este dentro de otro token alfanumerico.
+            antes = _limite_token(texto, i - 1)
+            despues = _limite_token(texto, j)
             if antes and despues and validar_cedula(subcadena):
                 resultados.append(subcadena)
             i = j
@@ -255,24 +282,21 @@ def validar_url(cadena):
     else:
         return False
 
-    # Leer dominio — debe tener al menos un punto (ej: google.com)
+    # Leer dominio hasta que empiece ruta, query o fragmento.
     if i >= n or not (es_alfanumerico(cadena[i]) or cadena[i] == '-'):
         return False
-    tiene_punto_dominio = False
+    inicio_dominio = i
     while i < n and (es_alfanumerico(cadena[i]) or cadena[i] in '.-'):
-        if cadena[i] == '.':
-            tiene_punto_dominio = True
         i += 1
-    if not tiene_punto_dominio:
+    if not _dominio_valido(cadena[inicio_dominio:i]):
         return False
 
-    # Ruta opcional
     # Leer ruta opcional
     caracteres_ruta = set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&\'()*+,;=%')
     while i < n and cadena[i] in caracteres_ruta:
         i += 1
 
-    return i == n and n > (len(protocolo_https))
+    return i == n
 
 
 def buscar_urls(texto):
@@ -291,7 +315,7 @@ def buscar_urls(texto):
                 if validar_url(subcadena):
                     # Verificar que el siguiente carácter no es parte de la URL
                     fin = i + longitud
-                    if fin == n or texto[fin] in ' \t\n"\'<>':
+                    if fin == n or texto[fin] in ' \t\n"\'<>),];.':
                         resultados.append(subcadena)
                         i += longitud - 1
                         encontrado = True
@@ -308,22 +332,20 @@ def validar_placa(cadena):
     Valida si una cadena es una placa colombiana válida.
     Retorna True o False.
     """
-    # Normalizar: quitar guión si existe
-    limpio = ''
-    for c in cadena:
-        if c != '-':
-            limpio += c
-
-    n = len(limpio)
-
-    # Las primeras 3 deben ser mayúsculas
-    if n < 5:
+    n = len(cadena)
+    if n not in (6, 7):
         return False
-    for c in limpio[:3]:
+    for c in cadena[:3]:
         if not es_mayuscula(c):
             return False
 
-    resto = limpio[3:]
+    if n == 7:
+        if cadena[3] != '-':
+            return False
+        resto = cadena[4:]
+        return len(resto) == 3 and all(es_digito(c) for c in resto)
+
+    resto = cadena[3:]
 
     if len(resto) != 3:
         return False

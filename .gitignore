@@ -8,7 +8,7 @@ env/
 # Caché de Python
 __pycache__/
 .py[cod]
-+*.pyo
+*.pyo
 
 # Distribución y empaquetado
 dist/

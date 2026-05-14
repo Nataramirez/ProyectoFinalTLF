@@ -5,6 +5,7 @@
 # =============================================================================
 
 import tkinter as tk
+from datetime import date
 from tkinter import scrolledtext, messagebox
 from patrones import validar_con_patron
 from motor_regex import es_letra, es_digito, es_mayuscula
@@ -75,19 +76,40 @@ def validar_nombre_usuario(cadena):
     Nombre de usuario:
       - Entre 4 y 20 caracteres
       - Solo letras, dígitos y guión bajo
-      - No puede empezar con dígito
+      - Debe empezar con letra
+      - No puede terminar en _ ni tener __ consecutivos
     Retorna (bool, str)
     """
     if len(cadena) < 4:
         return False, "Mínimo 4 caracteres"
     if len(cadena) > 20:
         return False, "Máximo 20 caracteres"
-    if es_digito(cadena[0]):
-        return False, "No puede empezar con un número"
+    if not es_letra(cadena[0]):
+        return False, "Debe empezar con una letra"
+    if cadena[-1] == '_':
+        return False, "No puede terminar con _"
+    if '__' in cadena:
+        return False, "No puede tener __ consecutivos"
     for c in cadena:
         if not (es_digito(c) or es_letra(c) or c == '_'):
             return False, f"Carácter no permitido: '{c}'"
     return True, "Usuario válido ✔"
+
+
+def validar_fecha_nacimiento(cadena, hoy=None):
+    """Valida formato de fecha y evita fechas de nacimiento futuras."""
+    if not validar_con_patron("fecha", cadena):
+        return False, "Usa el formato DD/MM/AAAA"
+
+    dia = int(cadena[0:2])
+    mes = int(cadena[3:5])
+    anio = int(cadena[6:10])
+    nacimiento = date(anio, mes, dia)
+    hoy = hoy or date.today()
+
+    if nacimiento > hoy:
+        return False, "La fecha no puede ser futura"
+    return True, "Fecha válida ✔"
 
 
 def validar_confirmacion(original, confirmacion):
@@ -192,6 +214,10 @@ class VentanaFormulario(tk.Frame):
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        canvas.bind("<Enter>", lambda e: self._activar_scroll_campos(canvas))
+        canvas.bind("<Leave>", lambda e: self._desactivar_scroll_campos(canvas))
+        self.frame_campos.bind("<Enter>", lambda e: self._activar_scroll_campos(canvas))
+        self.frame_campos.bind("<Leave>", lambda e: self._desactivar_scroll_campos(canvas))
 
         # Crear cada campo
         self._agregar_campo(
@@ -200,7 +226,7 @@ class VentanaFormulario(tk.Frame):
             placeholder="ej: juan_perez_01",
             tipo="texto",
             validador=self._validar_campo_usuario,
-            regla="4-20 caracteres · letras, números y _"
+            regla="4-20 caracteres · empieza con letra · sin _ final/doble"
         )
         self._agregar_campo(
             nombre="correo",
@@ -456,8 +482,7 @@ class VentanaFormulario(tk.Frame):
 
     def _validar_campo_fecha(self, nombre):
         valor = self._valor(nombre)
-        ok = validar_con_patron("fecha", valor) if valor else False
-        mensaje = "Fecha válida ✔" if ok else ("Campo requerido" if not valor else "Usa el formato DD/MM/AAAA")
+        ok, mensaje = validar_fecha_nacimiento(valor) if valor else (False, "Campo requerido")
         self._actualizar_campo(nombre, ok, mensaje)
 
     def _validar_campo_contrasena(self, nombre):
@@ -672,6 +697,30 @@ class VentanaFormulario(tk.Frame):
             entry.insert(0, placeholder)
             entry.config(fg=COLOR_TEXTO_SUAVE, bg=COLOR_CAMPO_NEUTRO,
                          highlightbackground=COLOR_BORDE)
+
+    def _activar_scroll_campos(self, canvas):
+        self._canvas_scroll_activo = canvas
+        canvas.bind_all("<MouseWheel>", self._scroll_campos)
+        canvas.bind_all("<Button-4>", self._scroll_campos)
+        canvas.bind_all("<Button-5>", self._scroll_campos)
+
+    def _desactivar_scroll_campos(self, canvas):
+        self._canvas_scroll_activo = None
+        canvas.unbind_all("<MouseWheel>")
+        canvas.unbind_all("<Button-4>")
+        canvas.unbind_all("<Button-5>")
+
+    def _scroll_campos(self, event):
+        canvas = getattr(self, "_canvas_scroll_activo", None)
+        if canvas is None:
+            return
+        if getattr(event, "num", None) == 4:
+            desplazamiento = -1
+        elif getattr(event, "num", None) == 5:
+            desplazamiento = 1
+        else:
+            desplazamiento = int(-event.delta / 120)
+        canvas.yview_scroll(desplazamiento, "units")
 
     def _boton(self, parent, texto, comando, bg, fg, borde=None):
         btn = tk.Button(

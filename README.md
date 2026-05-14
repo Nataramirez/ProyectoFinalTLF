@@ -28,7 +28,7 @@ La aplicación desarrollada es un sistema de escritorio construido con Python y 
 | URL | `http://` o `https://` + dominio | `https://www.pagina.com/ruta` |
 | Placa colombiana | `ABC-123` (carro) / `ABC12D` (moto) | `XYZ-999` |
 
-**B. Validación en formulario interactivo:** un formulario de registro valida cada campo en tiempo real mientras el usuario escribe, emitiendo retroalimentación visual inmediata. Los campos validados son: nombre de usuario, correo electrónico, teléfono, cédula, fecha de nacimiento, contraseña y confirmación de contraseña.
+**B. Validación en formulario interactivo:** un formulario de registro valida cada campo en tiempo real mientras el usuario escribe, emitiendo retroalimentación visual inmediata. Los campos validados son: nombre de usuario, correo electrónico, teléfono, cédula, fecha de nacimiento, contraseña y confirmación de contraseña. La fecha de nacimiento no puede ser futura y el panel de campos permite desplazamiento con la rueda del mouse.
 
 La solución cumple el requisito central del proyecto: **todas las validaciones se implementan mediante autómatas finitos deterministas codificados manualmente**, sin usar la librería `re` de Python ni ningún motor de expresiones regulares externo.
 
@@ -44,7 +44,7 @@ Se identificaron seis patrones de texto con relevancia en el contexto colombiano
 - El formato esperado y sus variantes permitidas.
 - Un conjunto de ejemplos válidos e inválidos para verificación.
 
-Adicionalmente se identificaron las reglas de negocio del formulario: contraseña segura con fortaleza progresiva y confirmación de contraseña coincidente.
+Adicionalmente se identificaron las reglas de negocio del formulario: nombre de usuario estructurado, fecha de nacimiento no futura, contraseña segura con fortaleza progresiva y confirmación de contraseña coincidente.
 
 ### 3.2 Diseño del Sistema
 
@@ -78,12 +78,12 @@ Estas funciones reemplazan completamente los predicados de la librería `re` y s
 
 #### Autómata para correo electrónico
 
-El AFD transita por cuatro estados:
+El AFD transita por estados que validan el usuario, el separador `@` y un dominio estructurado:
 
-- **q0→q1:** consume uno o más caracteres válidos de usuario (`[a-zA-Z0-9._-]+`)
+- **q0→q1:** consume uno o más caracteres válidos de usuario (`[a-zA-Z0-9._-]+`), rechazando punto inicial, punto final y puntos consecutivos.
 - **q1→q2:** consume exactamente un carácter `@`
-- **q2→q3:** consume uno o más caracteres alfanuméricos de dominio
-- **q3→qf:** consume uno o más bloques `.extension` donde la extensión tiene entre 2 y 6 letras
+- **q2→q3:** consume etiquetas de dominio formadas por letras, dígitos o guiones, sin etiquetas vacías ni guiones al inicio o al final.
+- **q3→qf:** exige al menos un punto y una extensión final alfabética de mínimo 2 letras.
 
 La cadena es aceptada si el índice `i` alcanza exactamente el final de la cadena en el estado final.
 
@@ -98,21 +98,21 @@ Esto acepta formatos como `3001234567`, `+573001234567`, `300-123-4567` y `+57 3
 
 #### Autómata para fecha
 
-Verifica longitud fija de 10 caracteres, separadores consistentes (`/` o `-`) en las posiciones 2 y 5, y rangos lógicos: día en [1,31], mes en [1,12], año en [1900,2099], con una tabla de días máximos por mes.
+Verifica longitud fija de 10 caracteres, separadores consistentes (`/` o `-`) en las posiciones 2 y 5, y rangos lógicos: día en [1,31], mes en [1,12], año en [1900,2099], con una tabla de días máximos por mes que contempla años bisiestos.
 
 #### Autómata para cédula colombiana
 
-Acepta cadenas de solo dígitos con longitud entre 6 y 10 que no inicien en `0`. Verificación de límites mediante comparación de posición en texto para evitar falsos positivos dentro de secuencias más largas.
+Acepta cadenas de solo dígitos con longitud entre 6 y 10 que no inicien en `0`. Verificación de límites mediante comparación de posición en texto para evitar falsos positivos dentro de secuencias más largas o dentro de otros tokens alfanuméricos.
 
 #### Autómata para URL
 
-Verifica el protocolo (`http://` o `https://`) carácter a carácter, luego lee el dominio exigiendo la presencia de al menos un punto (requisito corregido para rechazar `https://localhost`), y finalmente acepta una ruta opcional con el conjunto de caracteres válidos en URLs.
+Verifica el protocolo (`http://` o `https://`) carácter a carácter, luego lee el dominio exigiendo etiquetas válidas y la presencia de al menos un punto (por ejemplo, rechaza `https://localhost`, `https://google..com` y `https://google.com.`), y finalmente acepta una ruta opcional con el conjunto de caracteres válidos en URLs.
 
 #### Autómata para placa colombiana
 
-Normaliza quitando guiones, luego verifica:
-- Primeros 3 caracteres: letras mayúsculas.
-- Siguientes 3: dígitos (formato carro `ABC-123`) o 2 dígitos + 1 mayúscula (formato moto `ABC12D`).
+Verifica dos variantes sin aceptar guiones mal ubicados:
+- Carro: `ABC-123` o `ABC123`, con tres letras mayúsculas y tres dígitos.
+- Moto: `ABC12D`, con tres letras mayúsculas, dos dígitos y una letra mayúscula final.
 
 #### Algoritmos de búsqueda en texto
 
@@ -134,24 +134,24 @@ La aplicación presenta una ventana principal con tres pestañas implementadas:
 Panel izquierdo con área de texto editable y carga de archivos `.txt`. Panel derecho con resultados por categoría. Las coincidencias se resaltan en amarillo dentro del texto original. El usuario puede buscar todos los patrones a la vez o seleccionar uno específico mediante botones de radio.
 
 **Pestaña 2 — Formulario de Registro:**  
-Siete campos con validación en tiempo real al escribir. Un panel lateral muestra el resumen de estado de todos los campos simultáneamente. El indicador de fortaleza de contraseña evalúa seis criterios: longitud mínima, longitud extendida, mayúsculas, minúsculas, dígitos y caracteres especiales.
+Siete campos con validación en tiempo real al escribir. Un panel lateral muestra el resumen de estado de todos los campos simultáneamente. El indicador de fortaleza de contraseña evalúa seis criterios: longitud mínima, longitud extendida, mayúsculas, minúsculas, dígitos y caracteres especiales. El nombre de usuario debe empezar con letra, no puede terminar en `_` ni contener `__`; la fecha de nacimiento debe ser una fecha válida y no futura.
 
 **Pestaña 3 — Casos de Prueba:**  
 Ejecuta automáticamente los 52 casos de prueba (válidos e inválidos) de los seis patrones y muestra el resultado de cada uno con codificación de color. Incluye un resumen con el puntaje total y porcentaje de precisión.
 
 ### 3.6 Pruebas y Casos de Uso
 
-Se definieron **52 casos de prueba** distribuidos entre los seis patrones: 26 casos con entradas válidas y 26 con entradas inválidas. Además del visor integrado en la aplicación, se implementó una suite formal con `pytest` en `tests/test_patrones.py` que parametriza automáticamente todos los casos.
+Se definieron **52 casos de prueba** distribuidos entre los seis patrones para el visor integrado: 26 casos con entradas válidas y 26 con entradas inválidas. Además, se implementó una suite formal con `pytest` en `tests/test_patrones.py` y `tests/test_formulario.py`, que amplía la cobertura con casos borde de patrones y reglas del formulario.
 
 **Resultado de ejecución:**
 
 ```
 ============================= test session starts ==============================
-collected 52 items
+collected 84 items
 
 tests/test_patrones.py::test_patron[correo-...] PASSED
 ...
-============================== 52 passed in 0.03s ==============================
+============================== 84 passed in 0.35s ==============================
 ```
 
 **Tabla de casos de prueba representativos:**
@@ -209,7 +209,7 @@ Un desafío real fue que los lenguajes de cédula y teléfono son ambiguos para 
 La validación en tiempo real con retroalimentación inmediata mejora la experiencia del usuario al evitar el ciclo de error-corrección-reenvío.
 
 **Sobre las pruebas:**  
-La definición de casos de prueba formales como parte del desarrollo, y no como actividad posterior, permitió detectar errores en los autómatas durante la implementación. La suite de 52 casos con resultado 100% de precisión valida que los autómatas implementados reconocen correctamente el lenguaje definido para cada patrón.
+La definición de casos de prueba formales como parte del desarrollo, y no como actividad posterior, permitió detectar errores en los autómatas durante la implementación. La suite de 84 casos con resultado 100% de precisión valida que los autómatas implementados reconocen correctamente el lenguaje definido para cada patrón y que las reglas principales del formulario se comportan correctamente.
 
 ---
 

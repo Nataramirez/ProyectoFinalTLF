@@ -7,9 +7,7 @@ name = "proyecto_final_tlf"
 version = "1.0.0"
 description = "Proyecto Final TLF"
 requires-python = ">=3.10"
-dependencies = [
-    "customtkinter>=5.2.0"
-]
+dependencies = []
 
 [project.optional-dependencies]
 dev = [
@@ -21,7 +19,12 @@ dev = [
 ]
 
 [project.scripts]
-start = "proyecto_final_tlf.main:main"
+start = "main:main"
+proyecto-final-tlf = "main:main"
+
+[tool.setuptools]
+py-modules = ["main", "motor_regex", "patrones"]
+packages = ["interfaz"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

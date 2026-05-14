@@ -1,2 +1,3 @@
 [console_scripts]
-start = proyecto_final_tlf.main:main
+proyecto-final-tlf = main:main
+start = main:main
